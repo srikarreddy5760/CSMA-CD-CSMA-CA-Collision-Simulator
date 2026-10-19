@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>CSMA/CD & CSMA/CA Collision Simulator</title>
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ==============================
+         HEADER
+    =============================== -->
+    <header class="app-header">
+        <div class="header-content">
+            <div>
+                <h1>CSMA/CD & CSMA/CA</h1>
+                <p>Collision Detection & Collision Avoidance Simulator</p>
+            </div>
+
+            <div class="header-status">
+                <span class="status-dot"></span>
+                <span id="systemStatus">Ready</span>
+            </div>
+        </div>
+    </header>
+
+
+    <!-- ==============================
+         MAIN APPLICATION
+    =============================== -->
+    <main class="container">
+
+        <!-- ==============================
+             CONTROL PANEL
+        =============================== -->
+        <section class="control-panel">
+
+            <div class="panel-title">
+                <h2>Simulation Controls</h2>
+                <p>Configure the network before starting the simulation.</p>
+            </div>
+
+            <div class="controls-grid">
+
+                <!-- Protocol -->
+                <div class="control-group">
+                    <label for="protocol">Protocol</label>
+
+                    <select id="protocol">
+                        <option value="csma-cd">CSMA/CD</option>
+                        <option value="csma-ca">CSMA/CA</option>
+                    </select>
+                </div>
+
+
+                <!-- Number of Nodes -->
+                <div class="control-group">
+                    <label for="nodeCount">Number of Nodes</label>
+
+                    <input
+                        type="number"
+                        id="nodeCount"
+                        min="2"
+                        max="20"
+                        value="5"
+                    >
+                </div>
+
+
+                <!-- Traffic Level -->
+                <div class="control-group">
+                    <label for="trafficLevel">Traffic Level</label>
+
+                    <select id="trafficLevel">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+
+
+                <!-- Simulation Speed -->
+                <div class="control-group">
+                    <label for="simulationSpeed">
+                        Simulation Speed
+                    </label>
+
+                    <select id="simulationSpeed">
+                        <option value="slow">Slow</option>
+                        <option value="normal" selected>Normal</option>
+                        <option value="fast">Fast</option>
+                    </select>
+                </div>
+
+            </div>
+
+
+            <!-- Buttons -->
+            <div class="button-group">
+
+                <button
+                    type="button"
+                    id="startButton"
+                    class="btn btn-primary"
+                >
+                    ▶ Start Simulation
+                </button>
+
+                <button
+                    type="button"
+                    id="pauseButton"
+                    class="btn btn-secondary"
+                    disabled
+                >
+                    ⏸ Pause
+                </button>
+
+                <button
+                    type="button"
+                    id="resetButton"
+                    class="btn btn-danger"
+                >
+                    ↻ Reset
+                </button>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================
+             NETWORK VISUALIZATION
+        =============================== -->
+        <section class="visualization-panel">
+
+            <div class="section-header">
+
+                <div>
+                    <h2>Network Visualization</h2>
+                    <p id="protocolDescription">
+                        Carrier Sense Multiple Access with Collision Detection
+                    </p>
+                </div>
+
+                <div class="channel-status">
+                    <span class="channel-label">Channel</span>
+
+                    <span
+                        id="channelStatus"
+                        class="channel-state idle"
+                    >
+                        IDLE
+                    </span>
+                </div>
+
+            </div>
+
+
+            <!-- SVG NETWORK AREA -->
+            <div class="network-container">
+
+                <svg
+                    id="networkSvg"
+                    viewBox="0 0 1000 500"
+                    preserveAspectRatio="xMidYMid meet"
+                    role="img"
+                    aria-label="Network simulation visualization"
+                >
+
+                    <!-- Background -->
+                    <rect
+                        x="0"
+                        y="0"
+                        width="1000"
+                        height="500"
+                        class="network-background"
+                    ></rect>
+
+
+                    <!-- Channel -->
+                    <line
+                        id="channelLine"
+                        x1="180"
+                        y1="250"
+                        x2="820"
+                        y2="250"
+                        class="channel-line"
+                    ></line>
+
+
+                    <!-- Channel Label -->
+                    <text
+                        x="500"
+                        y="225"
+                        text-anchor="middle"
+                        class="channel-text"
+                    >
+                        SHARED CHANNEL
+                    </text>
+
+
+                    <!-- Packet Animation Layer -->
+                    <g id="packetLayer"></g>
+
+
+                    <!-- Node Layer -->
+                    <g id="nodeLayer"></g>
+
+
+                    <!-- Collision Indicator -->
+                    <g
+                        id="collisionIndicator"
+                        class="collision-indicator"
+                        visibility="hidden"
+                    >
+
+                        <circle
+                            cx="500"
+                            cy="250"
+                            r="45"
+                            class="collision-circle"
+                        ></circle>
+
+                        <text
+                            x="500"
+                            y="245"
+                            text-anchor="middle"
+                            class="collision-symbol"
+                        >
+                            ⚠
+                        </text>
+
+                        <text
+                            x="500"
+                            y="275"
+                            text-anchor="middle"
+                            class="collision-text"
+                        >
+                            COLLISION
+                        </text>
+
+                    </g>
+
+
+                    <!-- Success Indicator -->
+                    <g
+                        id="successIndicator"
+                        class="success-indicator"
+                        visibility="hidden"
+                    >
+
+                        <circle
+                            cx="500"
+                            cy="250"
+                            r="40"
+                            class="success-circle"
+                        ></circle>
+
+                        <text
+                            x="500"
+                            y="258"
+                            text-anchor="middle"
+                            class="success-symbol"
+                        >
+                            ✓
+                        </text>
+
+                    </g>
+
+                </svg>
+
+            </div>
+
+
+            <!-- ==============================
+                 NODE INFORMATION
+            =============================== -->
+            <div class="node-information">
+
+                <div class="subsection-header">
+                    <h3>Node Status</h3>
+                </div>
+
+                <div
+                    id="nodeStatusContainer"
+                    class="node-status-container"
+                >
+
+                    <!-- Nodes will be generated by JavaScript -->
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================
+             STATISTICS
+        =============================== -->
+        <section class="statistics-panel">
+
+            <div class="section-header">
+                <div>
+                    <h2>Simulation Statistics</h2>
+                    <p>Real-time performance measurements</p>
+                </div>
+            </div>
+
+
+            <div class="statistics-grid">
+
+                <!-- Collisions -->
+                <div class="stat-card">
+
+                    <div class="stat-icon collision-icon">
+                        ⚠
+                    </div>
+
+                    <div class="stat-content">
+                        <span class="stat-label">
+                            Collisions
+                        </span>
+
+                        <strong
+                            id="collisionCount"
+                            class="stat-value"
+                        >
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Successful Transmissions -->
+                <div class="stat-card">
+
+                    <div class="stat-icon success-icon">
+                        ✓
+                    </div>
+
+                    <div class="stat-content">
+                        <span class="stat-label">
+                            Successful
+                        </span>
+
+                        <strong
+                            id="successCount"
+                            class="stat-value"
+                        >
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Failed Transmissions -->
+                <div class="stat-card">
+
+                    <div class="stat-icon failed-icon">
+                        ✕
+                    </div>
+
+                    <div class="stat-content">
+                        <span class="stat-label">
+                            Failed
+                        </span>
+
+                        <strong
+                            id="failureCount"
+                            class="stat-value"
+                        >
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Retransmissions -->
+                <div class="stat-card">
+
+                    <div class="stat-icon retry-icon">
+                        ↻
+                    </div>
+
+                    <div class="stat-content">
+                        <span class="stat-label">
+                            Retransmissions
+                        </span>
+
+                        <strong
+                            id="retryCount"
+                            class="stat-value"
+                        >
+                            0
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Throughput -->
+                <div class="stat-card">
+
+                    <div class="stat-icon throughput-icon">
+                        ⇧
+                    </div>
+
+                    <div class="stat-content">
+                        <span class="stat-label">
+                            Throughput
+                        </span>
+
+                        <strong
+                            id="throughput"
+                            class="stat-value"
+                        >
+                            0%
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Average Delay -->
+                <div class="stat-card">
+
+                    <div class="stat-icon delay-icon">
+                        ◷
+                    </div>
+
+                    <div class="stat-content">
+                        <span class="stat-label">
+                            Average Delay
+                        </span>
+
+                        <strong
+                            id="averageDelay"
+                            class="stat-value"
+                        >
+                            0 ms
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Channel Utilization -->
+                <div class="stat-card">
+
+                    <div class="stat-icon utilization-icon">
+                        ◈
+                    </div>
+
+                    <div class="stat-content">
+                        <span class="stat-label">
+                            Channel Utilization
+                        </span>
+
+                        <strong
+                            id="channelUtilization"
+                            class="stat-value"
+                        >
+                            0%
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <!-- Success Rate -->
+                <div class="stat-card">
+
+                    <div class="stat-icon rate-icon">
+                        %
+                    </div>
+
+                    <div class="stat-content">
+                        <span class="stat-label">
+                            Success Rate
+                        </span>
+
+                        <strong
+                            id="successRate"
+                            class="stat-value"
+                        >
+                            0%
+                        </strong>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================
+             EVENT LOG
+        =============================== -->
+        <section class="event-panel">
+
+            <div class="section-header">
+
+                <div>
+                    <h2>Event Log</h2>
+                    <p>Real-time simulation events</p>
+                </div>
+
+                <button
+                    type="button"
+                    id="clearLogButton"
+                    class="clear-log-button"
+                >
+                    Clear Log
+                </button>
+
+            </div>
+
+
+            <div
+                id="eventLog"
+                class="event-log"
+                aria-live="polite"
+            >
+
+                <div class="log-entry system">
+                    <span class="log-time">[00:00]</span>
+                    <span class="log-message">
+                        Simulator ready. Configure the network and press Start.
+                    </span>
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================
+             PROTOCOL INFORMATION
+        =============================== -->
+        <section class="protocol-panel">
+
+            <div class="protocol-card">
+
+                <div class="protocol-card-header">
+                    <h2>CSMA/CD</h2>
+                    <span class="protocol-badge cd-badge">
+                        Collision Detection
+                    </span>
+                </div>
+
+                <p>
+                    Nodes listen to the shared channel before transmitting.
+                    If multiple nodes transmit simultaneously, a collision is
+                    detected and the nodes use binary exponential backoff
+                    before retransmitting.
+                </p>
+
+                <div class="protocol-flow">
+
+                    <span>Sense</span>
+                    <span>→</span>
+                    <span>Transmit</span>
+                    <span>→</span>
+                    <span>Detect Collision</span>
+                    <span>→</span>
+                    <span>Backoff</span>
+
+                </div>
+
+            </div>
+
+
+            <div class="protocol-card">
+
+                <div class="protocol-card-header">
+                    <h2>CSMA/CA</h2>
+                    <span class="protocol-badge ca-badge">
+                        Collision Avoidance
+                    </span>
+                </div>
+
+                <p>
+                    Wireless nodes sense the channel and use a random
+                    backoff mechanism before transmitting. Successful
+                    transmission can be confirmed using acknowledgements.
+                </p>
+
+                <div class="protocol-flow">
+
+                    <span>Sense</span>
+                    <span>→</span>
+                    <span>Backoff</span>
+                    <span>→</span>
+                    <span>Transmit</span>
+                    <span>→</span>
+                    <span>ACK</span>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================
+             COMPARISON AREA
+        =============================== -->
+        <section class="comparison-panel">
+
+            <div class="section-header">
+
+                <div>
+                    <h2>Protocol Comparison</h2>
+                    <p>
+                        Compare CSMA/CD and CSMA/CA performance
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="comparison-table-container">
+
+                <table class="comparison-table">
+
+                    <thead>
+
+                        <tr>
+                            <th>Metric</th>
+                            <th>CSMA/CD</th>
+                            <th>CSMA/CA</th>
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                        <tr>
+                            <td>Collisions</td>
+
+                            <td id="comparisonCdCollisions">
+                                0
+                            </td>
+
+                            <td id="comparisonCaCollisions">
+                                0
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Successful Transmissions</td>
+
+                            <td id="comparisonCdSuccess">
+                                0
+                            </td>
+
+                            <td id="comparisonCaSuccess">
+                                0
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Retransmissions</td>
+
+                            <td id="comparisonCdRetries">
+                                0
+                            </td>
+
+                            <td id="comparisonCaRetries">
+                                0
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Throughput</td>
+
+                            <td id="comparisonCdThroughput">
+                                0%
+                            </td>
+
+                            <td id="comparisonCaThroughput">
+                                0%
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Average Delay</td>
+
+                            <td id="comparisonCdDelay">
+                                0 ms
+                            </td>
+
+                            <td id="comparisonCaDelay">
+                                0 ms
+                            </td>
+                        </tr>
+
+                        <tr>
+                            <td>Success Rate</td>
+
+                            <td id="comparisonCdRate">
+                                0%
+                            </td>
+
+                            <td id="comparisonCaRate">
+                                0%
+                            </td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- ==============================
+             FOOTER INFORMATION
+        =============================== -->
+        <section class="footer-info">
+
+            <p>
+                CSMA/CD & CSMA/CA Collision Simulator
+            </p>
+
+            <p>
+                Computer Networks Project
+            </p>
+
+        </section>
+
+    </main>
+
+
+    <!-- ==============================
+         JAVASCRIPT FILES
+    =============================== -->
+
+    <script type="module" src="js/app.js"></script>
+
+</body>
+</html>
